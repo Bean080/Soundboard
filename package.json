@@ -1,0 +1,50 @@
+{
+  "name": "easy-audio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Easy Audio soundboard with global keyboard shortcuts",
+  "author": "Benjamin Clarke",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "test:desktop": "electron tests/desktop-smoke.cjs --smoke-test",
+    "desktop": "electron .",
+    "desktop:pack": "electron-builder --win --x64 --dir",
+    "desktop:build": "electron-builder --win nsis --x64 --publish never"
+  },
+  "build": {
+    "appId": "com.bean080.easyaudio",
+    "productName": "Easy Audio",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "desktop/**",
+      "index.html",
+      "library.html",
+      "styles.css",
+      "app.js",
+      "library.js",
+      "storage.js",
+      "assets/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/app-icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "artifactName": "Easy-Audio-Setup-${version}.${ext}"
+  },
+  "devDependencies": {
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0"
+  }
+}

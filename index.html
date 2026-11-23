@@ -5,22 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#11120f" />
     <meta name="description" content="A personal soundboard for the sounds you bring." />
-    <title>Soundboard</title>
+    <title>Easy Audio</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="index.html" aria-label="Soundboard home"><span class="brand-icon" aria-hidden="true">♫</span>Soundboard</a>
+      <a class="brand" href="index.html" aria-label="Easy Audio home"><span class="brand-icon" aria-hidden="true">♫</span>Easy Audio</a>
       <div class="header-actions">
+        <button id="global-keys" class="library-link" type="button" aria-pressed="false" aria-describedby="global-keys-status" hidden>Global keys: Off</button>
         <label class="output-control" for="audio-output"><span>Audio output</span><select id="audio-output" aria-describedby="output-help"><option value="">System default</option></select></label>
         <a class="library-link" href="library.html">Library <span aria-hidden="true">↗</span></a>
       </div>
     </header>
     <main class="board-wrap">
       <div class="board-heading">
-        <h1>Soundboard</h1>
+        <h1>Easy Audio</h1>
         <div class="board-summary"><span id="board-count">0 / 20 on board</span></div>
       </div>
+      <p id="global-keys-status" class="desktop-key-status" role="status" hidden></p>
       <section class="sound-grid" id="sound-grid" aria-label="Soundboard cards"></section>
       <section class="empty-state" id="empty-state" hidden>
         <div class="empty-icon" aria-hidden="true">♫</div>

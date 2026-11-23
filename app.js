@@ -30,6 +30,47 @@
   let toastTimer;
   let listeningEntry = null;
   let playbackSequence = 0;
+  const desktop = window.easyAudioDesktop;
+  const globalKeysButton = document.querySelector('#global-keys');
+  const globalKeysStatus = document.querySelector('#global-keys-status');
+
+  function showGlobalStatus(status) {
+    globalKeysButton.textContent = `Global keys: ${status.enabled ? 'On' : 'Off'}`;
+    globalKeysButton.setAttribute('aria-pressed', String(status.enabled));
+    globalKeysStatus.textContent = status.failed.length
+      ? `Unavailable global keys: ${status.failed.map(keyLabel).join(', ')}. Rebind them or close the app using them.`
+      : status.enabled
+        ? 'Global keys are on. Keep Easy Audio open or minimized to use your bindings in other apps. Assigned keys are reserved while you use other apps.'
+        : 'Turn on Global Keys to trigger sounds from other apps. Assigned keys will be reserved until you turn it off.';
+  }
+  async function syncDesktopBindings() {
+    if (!desktop) return;
+    try {
+      showGlobalStatus(await desktop.updateBindings(boardEntries.map((entry) => ({ id: entry.id, code: keyBindings[entry.id] }))));
+    } catch { notify('Could not update global keys'); }
+  }
+  if (desktop) {
+    globalKeysButton.hidden = false;
+    globalKeysStatus.hidden = false;
+    showGlobalStatus({ enabled: false, failed: [] });
+    desktop.onStatus(showGlobalStatus);
+    desktop.onTrigger((id) => {
+      if (!boardEntries.some((entry) => entry.id === id)) return;
+      wakeAudioContext();
+      playEntry(id, selectedModes[id] || 'CutIn');
+    });
+    desktop.onLibraryChanged(() => {
+      if (store) renderBoard().catch(() => notify('Could not refresh the board'));
+    });
+    globalKeysButton.addEventListener('click', async () => {
+      wakeAudioContext();
+      globalKeysButton.disabled = true;
+      try {
+        showGlobalStatus(await desktop.setGlobalEnabled(globalKeysButton.getAttribute('aria-pressed') !== 'true'));
+      } catch { notify('Could not change global keys'); }
+      finally { globalKeysButton.disabled = false; }
+    });
+  }
 
   function loadObject(key) {
     try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
@@ -447,6 +488,7 @@
     emptyState.hidden = boardEntries.length > 0;
     grid.hidden = boardEntries.length === 0;
     if (listeningEntry && !boardEntries.some((entry) => entry.id === listeningEntry)) listeningEntry = null;
+    await syncDesktopBindings();
   }
 
   document.addEventListener('keydown', (event) => {
@@ -472,6 +514,7 @@
       keyBindings[assigned] = event.code;
       listeningEntry = null;
       saveObject('soundboard-key-bindings', keyBindings);
+      syncDesktopBindings();
       showKeyBinding(assigned);
       notify(`${keyLabel(event.code)} assigned`);
       return;
