@@ -1,5 +1,6 @@
 (() => {
   const MAX_BOARD_SOUNDS = 20;
+  const titleCollator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
   const form = document.querySelector('#entry-form');
   const list = document.querySelector('#entry-list');
   const audioInput = document.querySelector('#entry-audio');
@@ -97,17 +98,18 @@
     card.className = 'entry-card';
     const visual = document.createElement('div');
     visual.className = 'entry-visual';
+    visual.setAttribute('aria-hidden', 'true');
+    const image = document.createElement('img');
+    image.alt = '';
     if (entry.iconBlob) {
-      const image = document.createElement('img');
       const url = URL.createObjectURL(entry.iconBlob);
       iconUrls.push(url);
       image.src = url;
-      image.alt = '';
-      visual.append(image);
     } else {
-      visual.textContent = '♫';
-      visual.setAttribute('aria-hidden', 'true');
+      image.src = 'assets/app-icon.png';
+      image.className = 'app-logo';
     }
+    visual.append(image);
     const details = document.createElement('div');
     details.className = 'entry-details';
     const title = document.createElement('h3');
@@ -290,7 +292,9 @@
     return card;
   }
   async function renderEntries() {
-    const entries = (await store.all()).sort((a, b) => (a.added || 0) - (b.added || 0));
+    const entries = (await store.all()).sort((a, b) =>
+      titleCollator.compare((a.title || a.name || '').trim(), (b.title || b.name || '').trim()) ||
+      (a.added || 0) - (b.added || 0));
     const selectedCount = entries.filter((entry) => entry.showOnBoard).length;
     document.querySelector('#selection-count').textContent = `${selectedCount} / ${MAX_BOARD_SOUNDS} on board`;
     document.querySelector('#library-empty').hidden = entries.length !== 0;
@@ -298,6 +302,125 @@
     list.replaceChildren(...entries.map((entry, index) => createEntryCard(entry, index, selectedCount)));
   }
 
+  function isAudioFile(file) {
+    return file.type.startsWith('audio/') || /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|aiff?|wma)$/i.test(file.name);
+  }
+  function hasDraggedFiles(event) {
+    return Array.from(event.dataTransfer?.types || []).includes('Files');
+  }
+  function isImageFile(file) {
+    return file.type.startsWith('image/');
+  }
+  function draggedFile(event) {
+    const items = Array.from(event.dataTransfer?.items || []).filter((item) => item.kind === 'file');
+    if (items.length) {
+      if (items.length !== 1) return null;
+      // During a native file drag, browsers expose its type before its name or contents.
+      return items[0].getAsFile() || { type: items[0].type, name: '' };
+    }
+    const files = event.dataTransfer?.files;
+    return files?.length === 1 ? files[0] : null;
+  }
+  function setupFileDrop(input, { isValid, multipleMessage, invalidMessage, selectedMessage }) {
+    const zone = input.closest('.file-drop-zone');
+    const compatible = (event) => {
+      const file = draggedFile(event);
+      return Boolean(file && isValid(file));
+    };
+    let dragDepth = 0;
+    function reset() {
+      dragDepth = 0;
+      zone.classList.remove('is-dragging');
+    }
+    zone.addEventListener('dragenter', (event) => {
+      if (!hasDraggedFiles(event)) return;
+      event.preventDefault();
+      dragDepth += 1;
+      zone.classList.toggle('is-dragging', compatible(event));
+    });
+    zone.addEventListener('dragover', (event) => {
+      if (!hasDraggedFiles(event)) return;
+      event.preventDefault();
+      zone.classList.toggle('is-dragging', compatible(event));
+      event.dataTransfer.dropEffect = 'copy';
+    });
+    zone.addEventListener('dragleave', () => {
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (!dragDepth) reset();
+    });
+    zone.addEventListener('drop', (event) => {
+      if (!hasDraggedFiles(event)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      resetDropZones();
+      const files = Array.from(event.dataTransfer.files);
+      if (files.length !== 1) {
+        notify(multipleMessage);
+        return;
+      }
+      if (!isValid(files[0])) {
+        notify(invalidMessage);
+        return;
+      }
+      const selection = new DataTransfer();
+      selection.items.add(files[0]);
+      input.files = selection.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      notify(selectedMessage);
+    });
+    return {
+      reset() {
+        reset();
+        zone.classList.remove('is-compatible-drag');
+      },
+      update(event) {
+        zone.classList.toggle('is-compatible-drag', compatible(event));
+      },
+    };
+  }
+  const dropZones = [
+    setupFileDrop(audioInput, {
+      isValid: isAudioFile,
+      multipleMessage: 'Drop one audio file at a time',
+      invalidMessage: 'Choose a valid audio file',
+      selectedMessage: 'Audio selected. Choose a title, then add it to your library',
+    }),
+    setupFileDrop(iconInput, {
+      isValid: isImageFile,
+      multipleMessage: 'Drop one image at a time',
+      invalidMessage: 'Choose an image for the optional icon',
+      selectedMessage: 'Icon selected. Add the sound to your library to save it',
+    }),
+  ];
+  let fileDragDepth = 0;
+  function resetDropZones() {
+    fileDragDepth = 0;
+    dropZones.forEach((zone) => zone.reset());
+  }
+  document.addEventListener('dragenter', (event) => {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    fileDragDepth += 1;
+    dropZones.forEach((zone) => zone.update(event));
+  });
+  // Keep file drops outside the control from navigating away from the library.
+  document.addEventListener('dragover', (event) => {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    dropZones.forEach((zone) => zone.update(event));
+  });
+  document.addEventListener('drop', (event) => {
+    if (!hasDraggedFiles(event)) return;
+    event.preventDefault();
+    resetDropZones();
+  });
+  document.addEventListener('dragleave', (event) => {
+    if (!hasDraggedFiles(event)) return;
+    fileDragDepth = Math.max(0, fileDragDepth - 1);
+    if (!fileDragDepth || (!event.relatedTarget && (event.target === document.documentElement || event.target === document))) resetDropZones();
+  });
+  document.addEventListener('dragend', resetDropZones);
+  window.addEventListener('blur', resetDropZones);
   audioInput.addEventListener('change', () => {
     document.querySelector('#audio-choice').textContent = audioInput.files?.[0]?.name || 'Choose audio file';
   });
@@ -310,11 +433,11 @@
     const audio = audioInput.files?.[0];
     const icon = iconInput.files?.[0] || null;
     if (!title || !audio) return;
-    if (!audio.type.startsWith('audio/') && !/\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|aiff?|wma)$/i.test(audio.name)) {
+    if (!isAudioFile(audio)) {
       notify('Choose a valid audio file');
       return;
     }
-    if (icon && !icon.type.startsWith('image/')) {
+    if (icon && !isImageFile(icon)) {
       notify('Choose an image for the optional icon');
       return;
     }

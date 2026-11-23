@@ -1,5 +1,7 @@
 # Easy Audio
 
+[Download Easy Audio for Windows](https://github.com/Bean080/Soundboard/releases/download/v0.1.2/Easy-Audio-Setup-0.1.2.exe) · [Release notes](https://github.com/Bean080/Soundboard/releases/tag/v0.1.2)
+
 A static, browser based soundboard. Create library entries with a title, audio file, optional image icon, and playback settings, then choose up to 20 entries to show on the board. Each board card has a configurable keyboard shortcut and Cut-In, Fade-In, and Overlay playback modes. Click a card's key button, then press a letter or number (including numpad digits) to assign it immediately; Escape cancels. If the key belongs to another card, the two cards swap bindings. Shortcuts work while the board has focus, outside text fields and selectors. Ctrl, Alt, and Windows/Command combinations are not supported.
 
 ## Run locally
@@ -14,11 +16,11 @@ The site has no build step or server dependency. Publish the repository root wit
 
 ## Windows desktop app
 
-The desktop version runs locally using Electron and does not need the preview server or an internet connection. The initial Windows x64 installer is `dist/Easy-Audio-Setup-0.1.0.exe`. Run it and open Easy Audio from the Start menu or desktop shortcut.
+The desktop version runs locally using Electron and does not need the preview server or an internet connection. The current Windows x64 installer is `dist/Easy-Audio-Setup-0.1.2.exe`. Run it and open Easy Audio from the Start menu or desktop shortcut.
 
 Add your sounds in the desktop Library, select them for the board, and bind a letter, top-row number, or numpad digit. Turn **Global keys: On**, then minimize the app or switch to another application. The selected playback mode, trim, volume, and background settings still apply. Keep Easy Audio running; closing its main window exits the app and releases its shortcuts.
 
-Global keys start off each time the app launches. While enabled and another app is focused, assigned keys are reserved by Easy Audio and may not type into that app. Turn Global Keys off to release them. Keys already reserved by another application are listed below the board heading. While either Easy Audio window is focused, global registration is released so that editing, rebinding, and local key playback work normally. The library opens in a separate window to keep the board available for background playback.
+Global keys start off each time the app launches. While enabled and another app is focused, assigned keys are reserved by Easy Audio and may not type into that app. Turn Global Keys off to release them. Keys already reserved by another application are listed below the board heading. While the Easy Audio window is focused, global registration is released so that editing, rebinding, and local key playback work normally. Library opens in the same window and **Back to board** returns to the soundboard. The board stays loaded behind Library so audio can continue playing.
 
 Desktop sounds and settings are stored in Electron's local application profile, separately from the browser's library. Re-add your original files for the desktop version. This app does not install a virtual audio device or automatically route audio into Discord.
 
@@ -34,5 +36,9 @@ npm run desktop:build
 The smoke check uses its own profile under `.cache/desktop-smoke-profile`. The Windows installer and unpacked app are built under `dist/`, which is excluded from Git. The current installer is unsigned; Windows may display an unknown-publisher warning. Public distribution should use a signed build. Installer releases can be hosted separately from GitHub Pages without adding binaries to the source repository.
 
 ## User audio storage
+
+Library entries are automatically displayed alphabetically by title, ignoring capitalization and sorting numbered titles naturally (for example, Sound 2 before Sound 10).
+
+On the Library page, drag one audio file or image over the page to expand only its matching upload control, then drop it onto that control. The highlight depends on the file type exposed by your browser while dragging; files with an unknown type can still be dropped and validated. You can also click either control to browse. Enter a title and select **Add to library** to save the sound and optional icon. Drag and drop works in both the website and desktop app.
 
 Uploaded audio and optional icons are stored in the visitor's browser using IndexedDB. Entry settings include background looping/resume, a start position, and playback volume. Board selection and entry settings are stored with each library entry; keyboard bindings and selected playback modes are saved in local browser storage. Nothing is uploaded to GitHub Pages or any server. The library belongs to that browser profile on that device; clearing site data or switching browsers removes access to it. Keep backups of original files.

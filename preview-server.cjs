@@ -3,11 +3,12 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const root = __dirname;
-const publicFiles = new Set(['index.html', 'library.html', 'styles.css', 'app.js', 'library.js', 'storage.js']);
+const publicFiles = new Set(['index.html', 'library.html', 'styles.css', 'app.js', 'library.js', 'storage.js', 'assets/app-icon.png']);
 const contentTypes = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.png': 'image/png',
 };
 
 const server = http.createServer(async (request, response) => {

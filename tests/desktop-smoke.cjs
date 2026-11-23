@@ -59,18 +59,45 @@ async function run(board) {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   assert.ok(played, 'Background trigger should start clip playback');
-  const created = once(app, 'browser-window-created');
+  const created = once(app, 'web-contents-created');
   await board.webContents.executeJavaScript("document.querySelector('a[href=\"library.html\"]').click()");
   const [, library] = await created;
-  if (library.webContents.isLoading()) await once(library.webContents, 'did-finish-load');
-  assert.equal(library.webContents.getURL(), 'easyaudio://app/library.html');
+  if (library.isLoading()) await once(library, 'did-finish-load');
+  assert.equal(library.getURL(), 'easyaudio://app/library.html');
   assert.equal(board.webContents.getURL(), 'easyaudio://app/index.html');
-  assert.equal(await library.webContents.executeJavaScript("(async () => ((await (await window.SoundboardStore).all()).length))()"), 1);
-  library.close();
+  assert.equal(BrowserWindow.getAllWindows().length, 1, 'Library must not open another window');
+  const libraryView = board.contentView.children.find((view) => view.webContents === library);
+  assert.ok(libraryView, 'Library must be embedded in the main window');
+  const assertLibraryBounds = () => {
+    const { width, height } = board.getContentBounds();
+    assert.deepEqual(libraryView.getBounds(), { x: 0, y: 0, width, height });
+  };
+  assertLibraryBounds();
+  const resized = once(board, 'resize');
+  board.setSize(1000, 700);
+  await resized;
+  assertLibraryBounds();
+  assert.equal(await library.executeJavaScript("(async () => ((await (await window.SoundboardStore).all()).length))()"), 1);
+  assert.ok(await board.webContents.executeJavaScript("Boolean(document.querySelector('.sound-card.is-playing'))"), 'Opening Library must keep the board and playback loaded');
+  await library.executeJavaScript(`(async () => {
+    const store = await window.SoundboardStore;
+    const entry = (await store.all())[0];
+    entry.title = 'Updated in Library';
+    await store.save(entry);
+  })()`);
+  const closed = once(library, 'destroyed');
+  await library.executeJavaScript("document.querySelector('a[href=\"index.html\"]').click()");
+  await closed;
+  assert.ok(!board.contentView.children.includes(libraryView), 'Back to board must remove the Library pane');
+  for (let attempt = 0; attempt < 50; attempt++) {
+    if (await board.webContents.executeJavaScript("document.querySelector('.sound-card h2')?.textContent === 'Updated in Library'")) break;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  assert.equal(await board.webContents.executeJavaScript("document.querySelector('.sound-card h2')?.textContent"), 'Updated in Library');
   await board.webContents.executeJavaScript('window.easyAudioDesktop.setGlobalEnabled(false)');
   assert.equal(globalShortcut.isRegistered('num1'), false);
   assert.equal(BrowserWindow.getAllWindows().length, 1);
-  console.log('PASS: isolated desktop storage, renderer bridge, numpad registration, background playback trigger, separate library navigation, and shortcut release.');
+  console.log('PASS: isolated desktop storage, renderer bridge, numpad registration, playback behind Library, same-window navigation and resizing, refreshed Library edits, and shortcut release.');
 }
 
 require('../desktop/main.cjs');

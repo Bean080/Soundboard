@@ -1,7 +1,6 @@
 (() => {
   const modes = ['CutIn', 'FadeIn', 'Overlay'];
   const FADE_DURATION_MS = 5000;
-  const defaultIcon = '♫';
   const colors = ['#c8f179', '#f1a274', '#89d9ce', '#d39df0', '#efd06f', '#8bb7f3', '#f08fac', '#9bd88c', '#e6aa67', '#9dc6d1'];
   const MAX_BOARD_SOUNDS = 20;
   const defaultKeys = [
@@ -39,9 +38,8 @@
     globalKeysButton.setAttribute('aria-pressed', String(status.enabled));
     globalKeysStatus.textContent = status.failed.length
       ? `Unavailable global keys: ${status.failed.map(keyLabel).join(', ')}. Rebind them or close the app using them.`
-      : status.enabled
-        ? 'Global keys are on. Keep Easy Audio open or minimized to use your bindings in other apps. Assigned keys are reserved while you use other apps.'
-        : 'Turn on Global Keys to trigger sounds from other apps. Assigned keys will be reserved until you turn it off.';
+      : '';
+    globalKeysStatus.hidden = !status.failed.length;
   }
   async function syncDesktopBindings() {
     if (!desktop) return;
@@ -51,7 +49,6 @@
   }
   if (desktop) {
     globalKeysButton.hidden = false;
-    globalKeysStatus.hidden = false;
     showGlobalStatus({ enabled: false, failed: [] });
     desktop.onStatus(showGlobalStatus);
     desktop.onTrigger((id) => {
@@ -227,16 +224,17 @@
     const icon = document.createElement('div');
     icon.className = 'slot-icon';
     icon.setAttribute('aria-hidden', 'true');
+    const image = document.createElement('img');
+    image.alt = '';
     if (entry.iconBlob) {
-      const image = document.createElement('img');
       const url = URL.createObjectURL(entry.iconBlob);
       iconUrls.push(url);
       image.src = url;
-      image.alt = '';
-      icon.append(image);
     } else {
-      icon.textContent = defaultIcon;
+      image.src = 'assets/app-icon.png';
+      image.className = 'app-logo';
     }
+    icon.append(image);
     const copy = document.createElement('div');
     copy.className = 'slot-copy';
     const title = document.createElement('h2');

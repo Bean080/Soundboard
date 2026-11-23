@@ -1,7 +1,9 @@
-const { app, BrowserWindow, dialog, globalShortcut, ipcMain, protocol, session } = require('electron');
+const { app, BrowserWindow, WebContentsView, dialog, globalShortcut, ipcMain, protocol, session } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { registerBindings } = require('./shortcuts.cjs');
+
+if (process.platform === 'win32') app.setAppUserModelId('com.bean080.easyaudio');
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'easyaudio', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
 const ORIGIN = 'easyaudio://app';
@@ -11,7 +13,7 @@ const root = path.join(__dirname, '..');
 const publicFiles = new Set(['index.html', 'library.html', 'styles.css', 'app.js', 'library.js', 'storage.js', 'assets/app-icon.png']);
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png' };
 let boardWindow;
-let libraryWindow;
+let libraryView;
 let bindings = [];
 let enabled = false;
 let failed = [];
@@ -31,38 +33,60 @@ function refreshShortcuts() {
 function isBoardSender(event) {
   return boardWindow && event.sender === boardWindow.webContents && event.senderFrame === event.sender.mainFrame && event.senderFrame.url === BOARD;
 }
-function createWindow(page, parent) {
+function configureNavigation(contents) {
+  contents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  contents.on('will-attach-webview', (event) => event.preventDefault());
+  contents.on('will-navigate', (event, url) => {
+    event.preventDefault();
+    if (url === LIBRARY) openLibrary();
+    else if (url === BOARD) closeLibrary();
+  });
+}
+function createWindow() {
   const window = new BrowserWindow({
     width: 1180, height: 820, minWidth: 900, minHeight: 480,
     show: !process.argv.includes('--smoke-test'),
     title: 'Easy Audio', backgroundColor: '#11120f',
-    icon: path.join(root, 'assets/app-icon.png'), parent,
+    icon: path.join(root, 'assets/app-icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
   window.removeMenu();
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  window.webContents.on('will-attach-webview', (event) => event.preventDefault());
-  window.webContents.on('will-navigate', (event, url) => {
-    event.preventDefault();
-    if (page === BOARD && url === LIBRARY) openLibrary();
-    else if (page === LIBRARY && url === BOARD) window.close();
-  });
+  configureNavigation(window.webContents);
   window.on('focus', () => {
     refreshShortcuts();
-    if (page === BOARD) send('easy-audio:library-changed');
+    if (!libraryView) send('easy-audio:library-changed');
   });
   window.on('blur', () => setImmediate(refreshShortcuts));
-  window.loadURL(page);
+  window.on('resize', resizeLibrary);
+  window.loadURL(BOARD);
   return window;
 }
+function resizeLibrary() {
+  if (!libraryView || !boardWindow || boardWindow.isDestroyed()) return;
+  const { width, height } = boardWindow.getContentBounds();
+  libraryView.setBounds({ x: 0, y: 0, width, height });
+}
 function openLibrary() {
-  if (libraryWindow && !libraryWindow.isDestroyed()) return libraryWindow.focus();
-  libraryWindow = createWindow(LIBRARY, boardWindow);
-  libraryWindow.on('closed', () => {
-    libraryWindow = null;
-    send('easy-audio:library-changed');
-    if (boardWindow && !boardWindow.isDestroyed()) boardWindow.focus();
+  if (!boardWindow || boardWindow.isDestroyed()) return;
+  if (libraryView) return libraryView.webContents.focus();
+  libraryView = new WebContentsView({
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
+  libraryView.setBackgroundColor('#11120f');
+  configureNavigation(libraryView.webContents);
+  boardWindow.contentView.addChildView(libraryView);
+  resizeLibrary();
+  libraryView.webContents.loadURL(LIBRARY);
+  libraryView.webContents.focus();
+}
+function closeLibrary() {
+  if (!libraryView) return;
+  const view = libraryView;
+  libraryView = null;
+  boardWindow.contentView.removeChildView(view);
+  view.webContents.close();
+  send('easy-audio:library-changed');
+  boardWindow.webContents.focus();
 }
 
 if (!app.requestSingleInstanceLock()) {
@@ -113,8 +137,13 @@ if (!app.requestSingleInstanceLock()) {
       failed = [];
       return refreshShortcuts();
     });
-    boardWindow = createWindow(BOARD);
-    boardWindow.on('closed', () => { boardWindow = null; app.quit(); });
+    boardWindow = createWindow();
+    boardWindow.on('closed', () => {
+      if (libraryView) libraryView.webContents.close();
+      libraryView = null;
+      boardWindow = null;
+      app.quit();
+    });
   }).catch((error) => { dialog.showErrorBox('Easy Audio could not start', error.message); app.quit(); });
   app.on('will-quit', () => globalShortcut.unregisterAll());
   app.on('window-all-closed', () => app.quit());

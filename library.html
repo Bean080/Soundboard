@@ -10,13 +10,12 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="index.html" aria-label="Easy Audio home"><span class="brand-icon" aria-hidden="true">♫</span>Easy Audio</a>
+      <a class="brand" href="index.html" aria-label="Easy Audio home"><span class="brand-icon" aria-hidden="true"><img class="app-logo" src="assets/app-icon.png" alt="" /></span>Easy Audio</a>
       <a class="library-link" href="index.html">Back to board <span aria-hidden="true">↗</span></a>
     </header>
     <main class="library-wrap">
       <div class="library-heading">
-        <div><p class="kicker">YOUR SOUNDS</p><h1>Library</h1></div>
-        <p class="board-hint">Create entries and choose which ones appear on your board.</p>
+        <h1>Library</h1>
       </div>
 
       <section class="entry-form-panel" aria-labelledby="new-entry-title">
@@ -25,8 +24,18 @@
           <label class="field-label" for="entry-title">Title</label>
           <input class="text-input" id="entry-title" name="title" type="text" maxlength="80" placeholder="Give this sound a title" required />
           <div class="file-fields">
-            <label class="file-field" for="entry-audio"><span class="file-field-label">Audio file <b>Required</b></span><span class="file-choice" id="audio-choice">Choose audio file</span><input id="entry-audio" name="audio" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.aiff,.wma" required /></label>
-            <label class="file-field" for="entry-icon"><span class="file-field-label">Icon <b>Optional</b></span><span class="file-choice" id="icon-choice">Choose image</span><input id="entry-icon" name="icon" type="file" accept="image/*" /></label>
+            <label class="file-field file-drop-zone" id="audio-drop-zone" for="entry-audio">
+              <span class="file-field-label">Audio file <b>Required</b></span>
+              <span class="file-choice" id="audio-choice">Choose audio file</span>
+              <span class="file-drop-hint" id="audio-drop-hint">Drop an audio file here, or click to browse</span>
+              <input id="entry-audio" name="audio" type="file" accept="audio/*,.mp3,.wav,.ogg,.oga,.m4a,.aac,.flac,.opus,.aif,.aiff,.wma" aria-describedby="audio-drop-hint" required />
+            </label>
+            <label class="file-field file-drop-zone" id="icon-drop-zone" for="entry-icon">
+              <span class="file-field-label">Icon <b>Optional</b></span>
+              <span class="file-choice" id="icon-choice">Choose image</span>
+              <span class="file-drop-hint" id="icon-drop-hint">Drop an image here, or click to browse</span>
+              <input id="entry-icon" name="icon" type="file" accept="image/*" aria-describedby="icon-drop-hint" />
+            </label>
           </div>
           <div class="form-bottom"><span>Audio and icons stay saved in this browser.</span><button class="submit-button" type="submit">Add to library <span aria-hidden="true">＋</span></button></div>
         </form>
@@ -35,7 +44,7 @@
       <section class="library-list-section" aria-labelledby="library-list-title">
         <div class="list-heading"><h2 id="library-list-title">Your entries</h2><span id="selection-count">0 / 20 on board</span></div>
         <div class="entry-list" id="entry-list" aria-live="polite"></div>
-        <div class="library-empty" id="library-empty" hidden><span aria-hidden="true">♫</span><p>No sounds in your library yet. Add one above to get started.</p></div>
+        <div class="library-empty" id="library-empty" hidden><span class="library-empty-icon" aria-hidden="true"><img class="app-logo" src="assets/app-icon.png" alt="" /></span><p>No sounds in your library yet. Add one above to get started.</p></div>
       </section>
     </main>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

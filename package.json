@@ -1,6 +1,6 @@
 {
   "name": "easy-audio",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "Easy Audio soundboard with global keyboard shortcuts",
   "author": "Benjamin Clarke",
@@ -32,7 +32,7 @@
     "win": {
       "target": "nsis",
       "icon": "assets/app-icon.png",
-      "signAndEditExecutable": false
+      "signExecutable": false
     },
     "nsis": {
       "oneClick": false,
