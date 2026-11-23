@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11120f" />
+    <meta name="description" content="A personal soundboard for the sounds you bring." />
+    <title>Soundboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Soundboard home"><span class="brand-icon" aria-hidden="true">♫</span>Soundboard</a>
+      <div class="header-actions">
+        <label class="output-control" for="audio-output"><span>Audio output</span><select id="audio-output" aria-describedby="output-help"><option value="">System default</option></select></label>
+        <a class="library-link" href="library.html">Library <span aria-hidden="true">↗</span></a>
+      </div>
+    </header>
+    <main class="board-wrap">
+      <div class="board-heading">
+        <div><p class="kicker">YOUR SOUNDBOARD</p><h1>Soundboard</h1></div>
+        <div class="board-summary"><span id="board-count">0 / 10 on board</span><p class="board-hint">Choose a mode, then press its numpad key. Click the key to rebind.</p></div>
+      </div>
+      <section class="sound-grid" id="sound-grid" aria-label="Soundboard cards"></section>
+      <section class="empty-state" id="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">♫</div>
+        <h2>Your board is empty</h2>
+        <p>Choose up to ten sounds from your library to show here.</p>
+        <a class="library-link" href="library.html">Open Library <span aria-hidden="true">↗</span></a>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <span id="output-help" class="visually-hidden">Choose speakers, headphones, or an installed virtual audio cable. Choose device may request browser permission.</span>
+    <script src="storage.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

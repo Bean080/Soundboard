@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#11120f" />
+    <meta name="description" content="Manage your personal sound library." />
+    <title>Library — Soundboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Soundboard home"><span class="brand-icon" aria-hidden="true">♫</span>Soundboard</a>
+      <a class="library-link" href="index.html">Back to board <span aria-hidden="true">↗</span></a>
+    </header>
+    <main class="library-wrap">
+      <div class="library-heading">
+        <div><p class="kicker">YOUR SOUNDS</p><h1>Library</h1></div>
+        <p class="board-hint">Create entries and choose which ones appear on your board.</p>
+      </div>
+
+      <section class="entry-form-panel" aria-labelledby="new-entry-title">
+        <h2 id="new-entry-title">Add a sound</h2>
+        <form id="entry-form">
+          <label class="field-label" for="entry-title">Title</label>
+          <input class="text-input" id="entry-title" name="title" type="text" maxlength="80" placeholder="Give this sound a title" required />
+          <div class="file-fields">
+            <label class="file-field" for="entry-audio"><span class="file-field-label">Audio file <b>Required</b></span><span class="file-choice" id="audio-choice">Choose audio file</span><input id="entry-audio" name="audio" type="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.opus,.aiff,.wma" required /></label>
+            <label class="file-field" for="entry-icon"><span class="file-field-label">Icon <b>Optional</b></span><span class="file-choice" id="icon-choice">Choose image</span><input id="entry-icon" name="icon" type="file" accept="image/*" /></label>
+          </div>
+          <div class="form-bottom"><span>Audio and icons stay saved in this browser.</span><button class="submit-button" type="submit">Add to library <span aria-hidden="true">＋</span></button></div>
+        </form>
+      </section>
+
+      <section class="library-list-section" aria-labelledby="library-list-title">
+        <div class="list-heading"><h2 id="library-list-title">Your entries</h2><span id="selection-count">0 / 10 on board</span></div>
+        <div class="entry-list" id="entry-list" aria-live="polite"></div>
+        <div class="library-empty" id="library-empty" hidden><span aria-hidden="true">♫</span><p>No sounds in your library yet. Add one above to get started.</p></div>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="storage.js"></script>
+    <script src="library.js"></script>
+  </body>
+</html>
