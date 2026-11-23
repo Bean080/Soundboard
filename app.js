@@ -1,9 +1,14 @@
 (() => {
   const modes = ['CutIn', 'FadeIn', 'Overlay'];
   const FADE_DURATION_MS = 5000;
-  const icons = ['♫', '✦', '◉', '⚡', '♪', '✳', '◇', '☼', '✧', '◌'];
+  const defaultIcon = '♫';
   const colors = ['#c8f179', '#f1a274', '#89d9ce', '#d39df0', '#efd06f', '#8bb7f3', '#f08fac', '#9bd88c', '#e6aa67', '#9dc6d1'];
-  const numpadCodes = Array.from({ length: 10 }, (_, index) => `Numpad${(index + 1) % 10}`);
+  const MAX_BOARD_SOUNDS = 20;
+  const defaultKeys = [
+    ...Array.from({ length: 10 }, (_, index) => `Numpad${(index + 1) % 10}`),
+    ...Array.from({ length: 10 }, (_, index) => `Digit${(index + 1) % 10}`),
+    ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ', (letter) => `Key${letter}`),
+  ];
   const grid = document.querySelector('#sound-grid');
   const emptyState = document.querySelector('#empty-state');
   const toast = document.querySelector('#toast');
@@ -119,27 +124,42 @@
     outputSelect.title = 'Output selection needs a supported browser such as Chrome or Edge, on HTTPS or localhost.';
   }
   function keyLabel(code) {
-    return `Num ${code.replace('Numpad', '')}`;
+    if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+    if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+    if (code?.startsWith('Numpad')) {
+      const suffix = code.slice(6);
+      return `Num ${{ Add: '+', Subtract: '-', Multiply: '*', Divide: '/', Decimal: '.', Enter: 'Enter', Equal: '=' }[suffix] || suffix}`;
+    }
+    return { Space: 'Space', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right', Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\', IntlBackslash: '\\', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/' }[code] || code || 'Unbound';
+  }
+  function isBindableKey(code) {
+    return typeof code === 'string' && /^(Key[A-Z]|Digit[0-9]|Numpad([0-9]|Add|Subtract|Multiply|Divide|Decimal|Enter|Equal)|F([1-9]|1[0-2])|Space|Enter|Arrow(Up|Down|Left|Right)|Home|End|PageUp|PageDown|Insert|Delete|Backspace|Backquote|Minus|Equal|BracketLeft|BracketRight|Backslash|IntlBackslash|Semicolon|Quote|Comma|Period|Slash)$/.test(code);
   }
   function showKeyBinding(id) {
     const button = grid.querySelector(`[data-entry="${CSS.escape(id)}"] .key-binding`);
     if (!button) return;
     const code = keyBindings[id];
-    button.textContent = listeningEntry === id ? 'Press key…' : keyLabel(code);
+    button.textContent = listeningEntry === id ? 'Press A–Z / 0–9' : keyLabel(code);
     button.classList.toggle('is-listening', listeningEntry === id);
-    button.setAttribute('aria-label', listeningEntry === id ? 'Press a number pad key' : `Change key binding, currently ${keyLabel(code)}`);
+    button.setAttribute('aria-label', listeningEntry === id ? 'Press a letter or number, or Escape to cancel' : `Change key binding, currently ${keyLabel(code)}`);
   }
   function assignDefaultKeys(entries) {
     const used = new Set();
     let changed = false;
-    entries.forEach((entry, index) => {
-      let code = keyBindings[entry.id];
-      if (!/^Numpad[0-9]$/.test(code || '') || used.has(code)) {
-        code = numpadCodes.find((candidate) => !used.has(candidate)) || numpadCodes[index % numpadCodes.length];
-        keyBindings[entry.id] = code;
-        changed = true;
+    const needsKey = [];
+    entries.forEach((entry) => {
+      const code = keyBindings[entry.id];
+      if (isBindableKey(code) && !used.has(code)) {
+        used.add(code);
+      } else {
+        needsKey.push(entry);
       }
+    });
+    needsKey.forEach((entry) => {
+      const code = defaultKeys.find((candidate) => !used.has(candidate));
+      keyBindings[entry.id] = code;
       used.add(code);
+      changed = true;
     });
     if (changed) saveObject('soundboard-key-bindings', keyBindings);
   }
@@ -174,7 +194,7 @@
       image.alt = '';
       icon.append(image);
     } else {
-      icon.textContent = icons[index % icons.length];
+      icon.textContent = defaultIcon;
     }
     const copy = document.createElement('div');
     copy.className = 'slot-copy';
@@ -194,7 +214,7 @@
       listeningEntry = id;
       if (previous && previous !== id) showKeyBinding(previous);
       showKeyBinding(id);
-      notify('Press a number pad key from 0 to 9');
+      notify('Press a letter or number to bind it. Escape cancels.');
     });
     tools.append(keyButton);
     top.append(icon, copy, tools);
@@ -204,7 +224,7 @@
     for (const mode of modes) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = mode;
+      button.textContent = { CutIn: 'Cut-In', FadeIn: 'Fade-In', Overlay: 'Overlay' }[mode];
       button.dataset.mode = mode;
       button.addEventListener('click', () => setSelectedMode(id, mode));
       actions.append(button);
@@ -417,32 +437,36 @@
     }
   }
   async function renderBoard() {
-    boardEntries = (await store.all()).filter((entry) => entry.showOnBoard).sort((a, b) => (a.added || 0) - (b.added || 0)).slice(0, 10);
+    boardEntries = (await store.all()).filter((entry) => entry.showOnBoard).sort((a, b) => (a.added || 0) - (b.added || 0)).slice(0, MAX_BOARD_SOUNDS);
     assignDefaultKeys(boardEntries);
     iconUrls.forEach(URL.revokeObjectURL);
     iconUrls.length = 0;
     grid.replaceChildren(...boardEntries.map(makeCard));
     for (const entry of boardEntries) setSelectedMode(entry.id, modes.includes(selectedModes[entry.id]) ? selectedModes[entry.id] : 'CutIn');
-    document.querySelector('#board-count').textContent = `${boardEntries.length} / 10 on board`;
+    document.querySelector('#board-count').textContent = `${boardEntries.length} / ${MAX_BOARD_SOUNDS} on board`;
     emptyState.hidden = boardEntries.length > 0;
     grid.hidden = boardEntries.length === 0;
     if (listeningEntry && !boardEntries.some((entry) => entry.id === listeningEntry)) listeningEntry = null;
   }
 
   document.addEventListener('keydown', (event) => {
+    if (event.isComposing) return;
     if (listeningEntry) {
       if (event.key === 'Escape') {
+        event.preventDefault();
         const pending = listeningEntry;
         listeningEntry = null;
         showKeyBinding(pending);
         return;
       }
-      if (!/^Numpad[0-9]$/.test(event.code)) return;
+      const isNumpadDigit = /^Numpad[0-9]$/.test(event.code);
+      const isLetterOrNumber = /^[a-z0-9]$/i.test(event.key) && /^(Key[A-Z]|Digit[0-9])$/.test(event.code);
+      if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || (!isNumpadDigit && !isLetterOrNumber)) return;
       event.preventDefault();
       const duplicate = boardEntries.find((entry) => entry.id !== listeningEntry && keyBindings[entry.id] === event.code);
       if (duplicate) {
-        notify(`${keyLabel(event.code)} is already assigned to ${duplicate.title || duplicate.name}`);
-        return;
+        keyBindings[duplicate.id] = keyBindings[listeningEntry];
+        showKeyBinding(duplicate.id);
       }
       const assigned = listeningEntry;
       keyBindings[assigned] = event.code;
@@ -452,7 +476,7 @@
       notify(`${keyLabel(event.code)} assigned`);
       return;
     }
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || (event.shiftKey && !/^[a-z]$/i.test(event.key))) return;
     const target = event.target;
     if (target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
     const entry = boardEntries.find((item) => keyBindings[item.id] === event.code);

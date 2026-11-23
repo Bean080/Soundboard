@@ -1,4 +1,5 @@
 (() => {
+  const MAX_BOARD_SOUNDS = 20;
   const form = document.querySelector('#entry-form');
   const list = document.querySelector('#entry-list');
   const audioInput = document.querySelector('#entry-audio');
@@ -121,10 +122,9 @@
     checkbox.checked = Boolean(entry.showOnBoard);
     checkbox.setAttribute('aria-label', `Show ${title.textContent} on the main board`);
     checkbox.addEventListener('change', async () => {
-      const nextCount = selectedCount + (checkbox.checked ? 1 : -1);
-      if (checkbox.checked && selectedCount >= 10) {
+      if (checkbox.checked && selectedCount >= MAX_BOARD_SOUNDS) {
         checkbox.checked = false;
-        notify('The main board can show up to 10 sounds');
+        notify(`The main board can show up to ${MAX_BOARD_SOUNDS} sounds`);
         return;
       }
       entry.showOnBoard = checkbox.checked;
@@ -292,7 +292,7 @@
   async function renderEntries() {
     const entries = (await store.all()).sort((a, b) => (a.added || 0) - (b.added || 0));
     const selectedCount = entries.filter((entry) => entry.showOnBoard).length;
-    document.querySelector('#selection-count').textContent = `${selectedCount} / 10 on board`;
+    document.querySelector('#selection-count').textContent = `${selectedCount} / ${MAX_BOARD_SOUNDS} on board`;
     document.querySelector('#library-empty').hidden = entries.length !== 0;
     clearPreviewUrls();
     list.replaceChildren(...entries.map((entry, index) => createEntryCard(entry, index, selectedCount)));

@@ -1,6 +1,6 @@
 # Soundboard
 
-A static, browser based soundboard. Create library entries with a title, audio file, optional image icon, and playback settings, then choose up to ten entries to show on the board. Each board card has a configurable number pad shortcut and CutIn, FadeIn, and Overlay playback modes.
+A static, browser based soundboard. Create library entries with a title, audio file, optional image icon, and playback settings, then choose up to 20 entries to show on the board. Each board card has a configurable keyboard shortcut and Cut-In, Fade-In, and Overlay playback modes. Click a card's key button, then press a letter or number (including numpad digits) to assign it immediately; Escape cancels. If the key belongs to another card, the two cards swap bindings. Shortcuts work while the board has focus, outside text fields and selectors. Ctrl, Alt, and Windows/Command combinations are not supported.
 
 ## Run locally
 
